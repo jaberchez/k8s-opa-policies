@@ -1,0 +1,15 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: AllowUserTenantTasks
+metadata:
+  name: allow-tenant-user-tasks
+  labels:
+    {{- include "opa-constraints.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook-weight: "5"
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Namespace","Secret"]
+      - apiGroups: ["networking.k8s.io"]
+        kinds: ["NetworkPolicy"]

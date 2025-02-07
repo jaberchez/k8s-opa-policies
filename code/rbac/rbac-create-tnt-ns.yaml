@@ -1,0 +1,45 @@
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: create-tnt-ns-clusterrole-namespaces-secrets
+rules:
+- apiGroups: [""]
+  resources: ["namespaces", "secrets"]
+  verbs: ["create", "get", "list"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: create-tnt-ns-clusterrolebinding-namespaces-secrets
+subjects:
+- kind: User
+  name: create-tnt-ns
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole 
+  name: create-tnt-ns-clusterrole-namespaces-secrets
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: create-tnt-ns-clusterrole-netpols
+rules:
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies"]
+  verbs: ["create", "get", "list"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: create-tnt-ns-clusterrolebinding-netpols
+subjects:
+- kind: User
+  name: create-tnt-ns
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole 
+  name: create-tnt-ns-clusterrole-netpols
+  apiGroup: rbac.authorization.k8s.io
+

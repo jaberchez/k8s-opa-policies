@@ -1,0 +1,2 @@
+integrationTests:
+  namespace: "integration-tests"

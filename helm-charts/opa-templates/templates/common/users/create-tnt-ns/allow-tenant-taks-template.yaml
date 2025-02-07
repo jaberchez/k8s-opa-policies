@@ -1,0 +1,82 @@
+# Policy to allow the user/ServiceAccount "create-tnt-ns" to create the following tasks:
+#  - Creates namespaces for tenants which start with the prefix tnt-
+#  - Creates the Secret "secret-dockercfg" of type "kubernetes.io/dockercfg" for pulling images from the private registry
+#  - Creates the NetworPolicy "default-deny-all" that denies all traffic by default
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: allowusertenanttasks
+  labels:
+    {{- include "opa-templates.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook-weight: "-100"
+    metadata.gatekeeper.sh/title: "Allows the user create-tnt-ns perform all tasks"
+    metadata.gatekeeper.sh/version: 1.0.0
+    description: >-
+      Allows user create-tnt-ns to create certain specific tasks.
+spec:
+  crd:
+    spec:
+      names:
+        kind: AllowUserTenantTasks
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package allowusertenanttasks
+
+        # Check NameSpace
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Namespace"
+          object := input.review.object
+          name := object.metadata.name
+          user := input.review.userInfo.username
+
+          contains(user, "create-tnt-ns") # For ServiceAccounts and users
+          not startswith(name, "tnt-")
+          
+          msg := sprintf("DENY - User [%v] is not allowed to create the Namespace [%v]. Only the name starting with [tnt-] is allowed", [user, name])
+        }
+
+        # Check Secret name
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Secret"
+          object := input.review.object
+          namespace := object.metadata.namespace
+          name := object.metadata.name
+          user := input.review.userInfo.username
+          secret_type := object.type
+
+          contains(user, "create-tnt-ns") # For ServiceAccounts and users
+          name != "secret-dockercfg"
+          
+          msg := sprintf("DENY - User [%v] is not allowed to create the Secret [%v] of type [%v] in namespace [%v]. Only allowed name [secret-dockercfg]", [user, name, secret_type, namespace])
+        }
+
+        # Check Secret type
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "Secret"
+          object := input.review.object
+          namespace := object.metadata.namespace
+          name := object.metadata.name
+          user := input.review.userInfo.username
+          secret_type := object.type
+
+          contains(user, "create-tnt-ns") # For ServiceAccounts and users
+          secret_type != "kubernetes.io/dockercfg"
+
+          msg := sprintf("DENY - User [%v] is not allowed to create the Secret [%v] of type [%v] in namespace [%v]. Only allowed type [kubernetes.io/dockercfg]", [user, name, secret_type, namespace])
+        }
+
+        # Check NetworkPolicy name
+        violation[{"msg": msg}] {
+          input.review.kind.kind == "NetworkPolicy"
+          object := input.review.object
+          namespace := object.metadata.namespace
+          name := object.metadata.name
+          user := input.review.userInfo.username
+
+          contains(user, "create-tnt-ns") # For ServiceAccounts and users
+          name != "default-deny-all"
+          
+          msg := sprintf("DENY - User [%v] is not allowed to create the NetworkPolicy with name [%v] in namespace [%v]. Only allowed name [default-deny-all]", [user, name, namespace])
+        }
